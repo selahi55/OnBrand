@@ -9,23 +9,20 @@ import os
 
 from .serializers import PostSerializer
 
-
+# /content (post 10 prev posts)
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def content_view(request):
-    title = request.data.get('title')
-    text = request.data.get('text')
+    content = request.data.get('content')
     image = request.FILES.get('image')  # May be None
     date = dateparser.parse(request.data.get('date'))
 
-
-    if not title or not text or not image or not date:
+    if not content or not image or not date:
         return Response({'error': 'Missing title or text in request body.'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         post = Post.objects.create(
-            title=title,
-            body=text,
+            content=content,
             image=image
         )
     except Exception as e:
@@ -35,8 +32,7 @@ def content_view(request):
         'message': 'Content saved successfully',
         'post': {
             'id': post.id,
-            'title': post.title,
-            'text': post.body,
+            'content': content,
             'image_url': post.image.url,
             'date': post.date
         }
