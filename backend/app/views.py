@@ -13,16 +13,23 @@ from .serializers import PostSerializer
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def content_view(request):
+    title = request.data.get('title')
     content = request.data.get('content')
+    category = request.data.get('category')
+    platform = request.data.get('platform')
+    status_value = request.data.get('status', 'Needs Review')
     image = request.FILES.get('image')  # May be None
-    date = dateparser.parse(request.data.get('date'))
 
-    if not content or not image or not date:
-        return Response({'error': 'Missing title or text in request body.'}, status=status.HTTP_400_BAD_REQUEST)
+    if not title or not content or not category or not platform:
+        return Response({'error': 'Missing required fields in request body.'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         post = Post.objects.create(
+            title=title,
             content=content,
+            category=category,
+            platform=platform,
+            status=status_value,
             image=image
         )
     except Exception as e:
@@ -32,8 +39,12 @@ def content_view(request):
         'message': 'Content saved successfully',
         'post': {
             'id': post.id,
-            'content': content,
-            'image_url': post.image.url,
+            'title': post.title,
+            'content': post.content,
+            'category': post.category,
+            'platform': post.platform,
+            'status': post.status,
+            'image_url': post.image.url if post.image else None,
             'date': post.date
         }
     }, status=status.HTTP_201_CREATED)

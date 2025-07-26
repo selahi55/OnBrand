@@ -4,11 +4,13 @@ interface PostData {
   id: number;
   title: string;
   status: string;
-  publishDate: string;
   category: string;
-  author: string;
   platform: string;
   content?: string;
+  image?: string;
+  image_url?: string;
+  date?: string;
+  author?: string; // Making author optional since it might not be in the backend data
 }
 
 interface PostReviewPageProps {
@@ -16,168 +18,49 @@ interface PostReviewPageProps {
 }
 
 const PostReviewPage = ({ postId }: PostReviewPageProps) => {
-  // Mock posts data - in a real app, this would come from an API
-  const mockPosts: PostData[] = [
-    {
-      id: 1,
-      title: 'Summer Campaign Launch',
-      status: 'Ready to Publish',
-      publishDate: '2023-06-15',
-      category: 'Marketing',
-      author: 'Jane Smith',
-      platform: 'Instagram',
-      content: `# Summer Campaign Launch 2023
+  // State for post data, loading, and error
+  const [post, setPost] = useState<PostData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-Our summer campaign is ready to launch! This campaign focuses on our new line of sustainable products.
-
-## Campaign Goals
-
-1. **Increase Brand Awareness**
-   - Reach 1 million impressions
-   - Grow Instagram followers by 10%
-
-2. **Drive Sales**
-   - 15% increase in online sales
-   - 20% increase in in-store traffic
-
-## Key Messaging
-
-- Sustainability is at the core of our new product line
-- Each purchase contributes to ocean cleanup efforts
-- Limited edition summer colors available only until August
-
-Let's make this our best summer campaign yet!`
-    },
-    {
-      id: 2,
-      title: 'Product Feature Announcement',
-      status: 'Needs Review',
-      publishDate: '2023-06-20',
-      category: 'Product',
-      author: 'John Doe',
-      platform: 'LinkedIn',
-      content: `# Exciting New Features Coming to Our Platform
-
-We're thrilled to announce several new features that will be rolling out next month. These enhancements are designed to improve user experience and productivity.
-
-## Key Features
-
-1. **Advanced Analytics Dashboard**
-   - Real-time data visualization
-   - Custom report generation
-   - Export capabilities in multiple formats
-
-2. **Integrated Collaboration Tools**
-   - In-app messaging system
-   - Document sharing and co-editing
-   - Task assignment and tracking
-
-3. **Mobile App Enhancements**
-   - Offline mode for on-the-go access
-   - Biometric authentication
-   - Streamlined interface for smaller screens
-
-We can't wait to hear your feedback on these new features!`
-    },
-    {
-      id: 3,
-      title: 'Customer Success Story',
-      status: 'Ready to Publish',
-      publishDate: '2023-06-18',
-      category: 'Case Study',
-      author: 'Emily Johnson',
-      platform: 'Blog',
-      content: `# How Company X Increased Efficiency by 200% with Our Solution
-
-## The Challenge
-
-Company X was struggling with outdated processes that were costing them time and money. Their team was spending hours on manual data entry and reporting.
-
-## The Solution
-
-After implementing our platform, Company X was able to:
-
-- Automate 90% of their data entry tasks
-- Generate reports in minutes instead of days
-- Improve team collaboration with real-time updates
-
-## The Results
-
-- 200% increase in overall efficiency
-- 45% reduction in operational costs
-- 98% team satisfaction rating
-
-"This solution has transformed how we work. We can't imagine going back to our old processes." - CEO, Company X`
-    },
-    {
-      id: 4,
-      title: 'Industry Trend Analysis',
-      status: 'Needs Review',
-      publishDate: '2023-06-25',
-      category: 'Research',
-      author: 'Michael Brown',
-      platform: 'Twitter',
-      content: `# 5 Industry Trends to Watch in 2023
-
-The landscape is evolving rapidly. Here are the key trends we're seeing:
-
-1. **AI Integration**
-   The use of artificial intelligence is becoming mainstream across all sectors.
-
-2. **Sustainability Focus**
-   Companies are prioritizing environmental impact more than ever.
-
-3. **Remote Work Evolution**
-   Hybrid models are becoming the new standard.
-
-4. **Data Privacy Emphasis**
-   New regulations are changing how companies handle customer data.
-
-5. **Personalization at Scale**
-   Customers expect tailored experiences without sacrificing privacy.
-
-Which of these trends will impact your business the most?`
-    },
-    {
-      id: 5,
-      title: 'Holiday Promotion Preview',
-      status: 'Needs Review',
-      publishDate: '2023-07-01',
-      category: 'Promotion',
-      author: 'Sarah Wilson',
-      platform: 'Facebook',
-      content: `# Holiday Season Special Offers - Preview
-
-Get ready for our biggest holiday promotion yet! Here's a sneak peek at what's coming:
-
-## Special Offers
-
-- **Early Bird Discount**: 25% off all products from Nov 15-20
-- **Bundle Deals**: Buy 3, get 1 free on selected items
-- **Gift Cards**: Purchase a $100 gift card, receive a $20 bonus card
-
-## Key Dates
-
-- **Black Friday**: Nov 24 - 40% off storewide
-- **Cyber Monday**: Nov 27 - Free shipping on all orders
-- **12 Days of Deals**: Dec 1-12 - New deals each day
-
-Marketing materials and social media assets will be available by October 15.`
-    }
-  ];
-
-  // Initialize with the second post as default (ID: 2)
-  const [post, setPost] = useState<PostData>(mockPosts[1]);
-
-  // Effect to find and set the post based on postId
+  // Effect to fetch post data from the backend
   useEffect(() => {
-    if (postId) {
-      const postIdNum = parseInt(postId, 10);
-      const foundPost = mockPosts.find(p => p.id === postIdNum);
-      if (foundPost) {
-        setPost(foundPost);
+    const fetchPost = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:8000/api/posts/');
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch posts');
+        }
+
+        const data = await response.json();
+
+        if (postId) {
+          const postIdNum = parseInt(postId, 10);
+          const foundPost = data.posts.find((p: PostData) => p.id === postIdNum);
+
+          if (foundPost) {
+            setPost(foundPost);
+          } else {
+            setError(`Post with ID ${postId} not found`);
+          }
+        } else if (data.posts.length > 0) {
+          // If no postId provided, use the first post
+          setPost(data.posts[0]);
+        } else {
+          setError('No posts available');
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching post:', err);
+        setError(err.message);
+        setLoading(false);
       }
-    }
+    };
+
+    fetchPost();
   }, [postId]);
 
   const [comment, setComment] = useState('');
@@ -264,6 +147,64 @@ Marketing materials and social media assets will be available by October 15.`
     }, 1500);
   };
 
+  // Show loading indicator while fetching data
+  if (loading) {
+    return (
+      <div className="text-gray-800">
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading post...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error message if there was an error
+  if (error) {
+    return (
+      <div className="text-gray-800">
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-6 mb-10">
+          <div className="flex items-center">
+            <svg className="w-6 h-6 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <h3 className="text-lg font-medium">Error loading post</h3>
+          </div>
+          <p className="mt-2">{error}</p>
+          <button 
+            onClick={() => window.location.hash = '#/dashboard'}
+            className="mt-4 bg-red-100 text-red-800 py-2 px-4 rounded-lg hover:bg-red-200 transition-colors duration-200"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show post content if post is available
+  if (!post) {
+    return (
+      <div className="text-gray-800">
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg p-6 mb-10">
+          <div className="flex items-center">
+            <svg className="w-6 h-6 text-yellow-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <h3 className="text-lg font-medium">No post found</h3>
+          </div>
+          <p className="mt-2">The requested post could not be found.</p>
+          <button 
+            onClick={() => window.location.hash = '#/dashboard'}
+            className="mt-4 bg-yellow-100 text-yellow-800 py-2 px-4 rounded-lg hover:bg-yellow-200 transition-colors duration-200"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="text-gray-800">
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
@@ -293,9 +234,9 @@ Marketing materials and social media assets will be available by October 15.`
             <div className="mt-2 flex items-center text-sm text-gray-500">
               <span className="mr-4">#{post.id}</span>
               <span className="mr-4">
-                <span className="font-medium text-gray-900">{post.author}</span> created this post
+                <span className="font-medium text-gray-900">{post.author || 'Unknown'}</span> created this post
               </span>
-              <span>Publish date: {post.publishDate}</span>
+              <span>Publish date: {post.date ? new Date(post.date).toLocaleDateString() : 'Unknown'}</span>
             </div>
           </div>
         </div>
@@ -311,10 +252,10 @@ Marketing materials and social media assets will be available by October 15.`
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
                 <div className="flex items-center mb-3">
                   <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-lg border border-purple-200 mr-3">
-                    {post.author.split(' ').map(name => name[0]).join('')}
+                    {post.author ? post.author.split(' ').map(name => name[0]).join('') : 'U'}
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">{post.author}</div>
+                    <div className="font-medium text-gray-900">{post.author || 'Unknown'}</div>
                     <div className="text-gray-500 text-sm">Author • {post.category} Specialist</div>
                   </div>
                 </div>
@@ -469,18 +410,18 @@ Marketing materials and social media assets will be available by October 15.`
             {/* LinkedIn Preview */}
             <div className="mb-10">
               <h3 className="text-xl font-bold text-gray-900 mb-4">LinkedIn Preview</h3>
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden max-w-2xl mx-auto">
+              <div className="bg-white rounded-lg border border-gray-200 shadow-md overflow-hidden max-w-2xl mx-auto hover:shadow-lg transition-shadow duration-300">
                 {/* LinkedIn header with profile info */}
                 <div className="p-4 border-b border-gray-200">
                   <div className="flex items-center">
                     <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg border border-blue-200 mr-3">
-                      {post.author.split(' ').map(name => name[0]).join('')}
+                      {post.author ? post.author.split(' ').map(name => name[0]).join('') : 'U'}
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900">{post.author}</div>
+                      <div className="font-medium text-gray-900">{post.author || 'Unknown'}</div>
                       <div className="text-gray-500 text-sm">Marketing Director at OnBrand • 2nd</div>
                       <div className="text-gray-400 text-xs flex items-center mt-1">
-                        <span>{new Date(post.publishDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                        <span>{post.date ? new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Unknown'}</span>
                         <span className="mx-1">•</span>
                         <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                           <path d="M8 0a8 8 0 100 16A8 8 0 008 0zm0 14.5a6.5 6.5 0 110-13 6.5 6.5 0 010 13z"></path>
@@ -495,9 +436,9 @@ Marketing materials and social media assets will be available by October 15.`
                 <div className="p-4">
                   {post.content ? (
                     <div>
-                      <p className="font-medium text-gray-900 mb-3">
+                      <h2 className="text-xl font-bold text-gray-900 mb-3">
                         {post.title}
-                      </p>
+                      </h2>
                       <div className="text-gray-700 mb-4">
                         {post.content.split('\n').slice(0, 4).map((line, index) => {
                           // Remove markdown formatting for LinkedIn preview
@@ -521,13 +462,21 @@ Marketing materials and social media assets will be available by October 15.`
                 </div>
 
                 {/* LinkedIn post image (if available) */}
-                <div className="bg-gray-100 h-64 flex items-center justify-center border-t border-b border-gray-200">
-                  <div className="text-gray-400 flex flex-col items-center">
-                    <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                    </svg>
-                    <span>Image would appear here</span>
-                  </div>
+                <div className="bg-gray-100  flex items-center justify-center border-t border-b border-gray-200">
+                  {post.image ? (
+                    <img 
+                      src={"http://localhost:8000" + post.image}
+                      alt="Post image" 
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <div className="text-gray-400 flex flex-col items-center">
+                      <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                      <span>No image available</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* LinkedIn engagement metrics */}
@@ -701,7 +650,7 @@ Marketing materials and social media assets will be available by October 15.`
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-sm text-gray-500">Created:</dt>
-                    <dd className="text-sm font-medium text-gray-900">{post.publishDate}</dd>
+                    <dd className="text-sm font-medium text-gray-900">{post.date ? new Date(post.date).toLocaleDateString() : 'Unknown'}</dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-sm text-gray-500">Word count:</dt>

@@ -9,9 +9,9 @@ const CreatePostPage = () => {
   const [platform, setPlatform] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Categories based on the existing posts
   const categories = [
     'Marketing',
@@ -20,7 +20,7 @@ const CreatePostPage = () => {
     'Research',
     'Promotion'
   ];
-  
+
   // Platforms for publishing
   const platforms = [
     'LinkedIn',
@@ -33,10 +33,10 @@ const CreatePostPage = () => {
   // Handle image upload
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    
+
     if (file) {
       setImage(file);
-      
+
       // Create a preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -45,7 +45,7 @@ const CreatePostPage = () => {
       reader.readAsDataURL(file);
     }
   };
-  
+
   // Handle removing uploaded image
   const handleRemoveImage = () => {
     setImage(null);
@@ -54,7 +54,7 @@ const CreatePostPage = () => {
       fileInputRef.current.value = '';
     }
   };
-  
+
   // Trigger file input click
   const triggerFileInput = () => {
     if (fileInputRef.current) {
@@ -63,23 +63,45 @@ const CreatePostPage = () => {
   };
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // In a real app, this would send the data to an API
-    console.log({
-      title,
-      content,
-      category,
-      platform,
-      status,
-      image: image ? image.name : null,
-      publishDate: new Date().toISOString().split('T')[0], // Today's date
-      author: 'Current User' // In a real app, this would be the logged-in user
-    });
-    
-    // Navigate back to dashboard
-    window.location.hash = '#/dashboard';
+
+    try {
+      // Create a FormData object to send the data
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('content', content);
+      formData.append('category', category);
+      formData.append('platform', platform);
+      formData.append('status', status);
+
+      // Only append image if it exists
+      if (image) {
+        formData.append('image', image);
+      }
+
+      // Send the data to the backend API
+      const response = await fetch('http://localhost:8000/api/content/', {
+        method: 'POST',
+        body: formData,
+        // No need to set Content-Type header as it's automatically set with FormData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create post');
+      }
+
+      const data = await response.json();
+      console.log('Post created successfully:', data);
+
+      // Navigate back to dashboard
+      window.location.hash = '#/dashboard';
+    } catch (error) {
+      console.error('Error creating post:', error);
+      // In a real app, you would show an error message to the user
+      alert('Failed to create post. Please try again.');
+    }
   };
 
   // Handle cancel
@@ -96,7 +118,7 @@ const CreatePostPage = () => {
           </h3>
           <p className="text-gray-600">Fill in the details below to create a new marketing post.</p>
         </div>
-  
+
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Title field */}
           <div>
@@ -113,7 +135,7 @@ const CreatePostPage = () => {
               required
             />
           </div>
-  
+
           {/* Content field - 70ch wide */}
           <div>
             <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
@@ -130,7 +152,7 @@ const CreatePostPage = () => {
                   placeholder="What do you want to share? Write your post content here..."
                   required
                 ></textarea>
-                
+
                 {/* Post toolbar */}
                 <div className="flex items-center px-4 py-2 bg-gray-50 border-t border-gray-200">
                   <div className="flex items-center text-sm text-gray-500">
@@ -141,7 +163,7 @@ const CreatePostPage = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Large gray drop area for image upload */}
               <div 
                 className={`mt-6 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg transition-colors ${!imagePreview ? 'hover:border-purple-400 hover:bg-gray-50' : ''}`}
@@ -213,7 +235,7 @@ const CreatePostPage = () => {
               </div>
             </div>
           </div>
-  
+
           {/* Two column layout for category and platform */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Category field */}
@@ -234,7 +256,7 @@ const CreatePostPage = () => {
                 ))}
               </select>
             </div>
-            
+
             {/* Platform field */}
             <div>
               <label htmlFor="platform" className="block text-sm font-medium text-gray-700 mb-1">
@@ -254,7 +276,7 @@ const CreatePostPage = () => {
               </select>
             </div>
           </div>
-  
+
           {/* Status field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
@@ -289,7 +311,7 @@ const CreatePostPage = () => {
               </div>
             </div>
           </div>
-  
+
           {/* AI Quality Check */}
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-5 rounded-lg border border-purple-200">
             <div className="flex items-center mb-2">
@@ -302,7 +324,7 @@ const CreatePostPage = () => {
               Your post will be automatically reviewed by our AI for brand consistency and engagement optimization.
             </p>
           </div>
-  
+
           {/* Form actions */}
           <div className="flex justify-end space-x-4 pt-6">
             <button
