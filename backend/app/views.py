@@ -11,6 +11,7 @@ def content_view(request):
         'data': content_data
     }, status=status.HTTP_201_CREATED)
 
+
 @api_view(['POST'])
 def review_view(request):
     review_data = request.data
