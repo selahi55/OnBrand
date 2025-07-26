@@ -41,15 +41,21 @@ def content_view(request):
 
 @api_view(['POST'])
 def review_view(request):
-    post_data = request.data.get('post')
+    title = request.data.get('title')
+    text = request.data.get('text')
+    image = request.FILES.get('image')  # May be None
+    date = dateparser.parse(request.data.get('date'))
 
-    if not post_data:
-        return Response({'error': 'Missing "post" in request body.'}, status=status.HTTP_400_BAD_REQUEST)
+    if not title or not text or not image or not date:
+        return Response({'error': 'Missing title or text in request body.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Optionally validate fields like rating/review text here
     return Response({
-        'message': 'Review received successfully',
-        'post': post_data
+        'message': 'Content saved successfully',
+        'post': {
+            'title': title,
+            'text': text,
+            'date': date
+        }
     }, status=status.HTTP_201_CREATED)
 
 @api_view(['GET'])

@@ -3,6 +3,32 @@ from django.db import models
 class Post(models.Model):
     content = models.TextField()
     image = models.ImageField(upload_to='images/')
+    CATEGORY_CHOICES = [
+        ('Marketing', 'Marketing'),
+        ('Product', 'Product'),
+        ('Case Study', 'Case Study'),
+        ('Research', 'Research'),
+        ('Promotion', 'Promotion'),
+    ]
+
+    PLATFORM_CHOICES = [
+        ('LinkedIn', 'LinkedIn'),
+        ('Facebook', 'Facebook'),
+        ('Instagram', 'Instagram'),
+        ('Twitter', 'Twitter'),
+        ('Blog', 'Blog'),
+    ]
+
+    STATUS_CHOICES = [
+        ('Needs Review', 'Needs Review'),
+        ('Ready to Publish', 'Ready to Publish'),
+    ]
+
+    title = models.CharField(max_length=200)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES)
+    image = models.ImageField(upload_to='images/', blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Needs Review')
     date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
